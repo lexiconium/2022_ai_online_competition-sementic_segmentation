@@ -36,9 +36,10 @@ train:
     weight_decay: 1e-2
 
   twin_head:
-    classifier_batch_size: 32
-    batch_size: 4
+    classifier_batch_size: 2
+    batch_size: 2
+    accumulation_steps: 16
     num_epochs: 200
-    learning_rate: 6e-5
+    learning_rate: 1e-4
     weight_decay: 1e-2
     eval_frequency: 10

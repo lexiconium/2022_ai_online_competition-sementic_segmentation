@@ -82,6 +82,9 @@ optimizer = optim.AdamW(
     lr=float(train_config["learning_rate"]),
     weight_decay=float(train_config["weight_decay"])
 )
+scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=100)
+
+accumulation_steps = train_config["accumulation_steps"]
 
 losses = []
 f1_metric = load_metric("f1")
@@ -89,11 +92,15 @@ miou_metric = load_metric("mean_iou")
 
 model.train()
 
+step = 0
+
 for epoch in range(1, train_config["num_epochs"] + 1):
     for (classifier_pixel_values, classifier_labels), segmenter_batch in tqdm(
         zip(classifier_train_dataloader, train_dataloader),
         total=min(len(classifier_train_dataloader), len(train_dataloader))
     ):
+        step += 1
+
         classifier_pixel_values = classifier_pixel_values.to(device)
         classifier_labels = classifier_labels.to(device)
         pixel_values = segmenter_batch["pixel_values"].to(device)
@@ -108,12 +115,16 @@ for epoch in range(1, train_config["num_epochs"] + 1):
         classifier_logits, logits = outputs.classifier_logits, outputs.logits
 
         loss = (outputs.classifier_loss + outputs.loss) / 2
-
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        loss /= accumulation_steps
 
         losses.append(loss.item())
+
+        loss.backward()
+
+        if step % accumulation_steps == 0:
+            optimizer.zero_grad()
+            optimizer.step()
+            scheduler.step()
 
         f1_metric.add_batch(
             predictions=classifier_logits.argmax(dim=-1).detach().cpu().numpy(),

@@ -119,7 +119,7 @@ class TwinHeadSegformerForSemanticSegmentation(SegformerPreTrainedModel):
                 raise ValueError("The number of labels should be greater than one")
             else:
                 # upsample logits to the images' original size
-                upsampled_logits = nn.functional.interpolate(
+                upsampled_logits = functional.interpolate(
                     segmenter_logits, size=labels.shape[-2:], mode="bilinear", align_corners=False
                 )
                 loss_fct = nn.CrossEntropyLoss(

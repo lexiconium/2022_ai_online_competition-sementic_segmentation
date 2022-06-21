@@ -13,7 +13,7 @@ import pandas as pd
 
 from tqdm import tqdm
 
-from config import load_config
+from utils import load_config
 
 parser = argparse.ArgumentParser(description="Image segmentation")
 parser.add_argument("--model_path", type=str, required=True)

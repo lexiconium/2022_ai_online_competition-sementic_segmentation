@@ -1,11 +1,9 @@
 import os
-from typing import Optional, Union
+from typing import Optional
 
 from torch.utils.data import Dataset
 
 import numpy as np
-
-from albumentations.core.composition import Compose, Transforms
 
 from sklearn.model_selection import train_test_split, StratifiedKFold
 
@@ -20,7 +18,7 @@ class HarborClassificationDataset(Dataset):
         img_names: np.ndarray,
         label_ids: np.ndarray,
         feature_extractor,
-        transform: Optional[Union[Compose, Transforms]] = None
+        transform=None
     ):
         if len(img_names) != len(label_ids):
             raise ValueError("img_names and label_ids must have the same length")
@@ -47,7 +45,7 @@ class HarborClassificationDataset(Dataset):
 
         return encoded_inputs["pixel_values"], label_id
 
-    def set_transform(self, transform: Union[Compose, Transforms]):
+    def set_transform(self, transform):
         self.transform = transform
 
     def split(self, valid_fraction: float = 0.2, seed: Optional[int] = None):
@@ -120,7 +118,7 @@ class HarborSegmentationDataset(Dataset):
         mask_names: np.ndarray,
         label_ids: np.ndarray,
         feature_extractor,
-        transform: Optional[Union[Compose, Transforms]] = None
+        transform=None
     ):
         if len(img_names) != len(mask_names):
             raise ValueError("img_names and label_ids must have the same length")
@@ -151,7 +149,7 @@ class HarborSegmentationDataset(Dataset):
 
         return encoded_inputs
 
-    def set_transform(self, transform: Union[Compose, Transforms]):
+    def set_transform(self, transform):
         self.transform = transform
 
     def split(self, valid_fraction: float = 0.2, seed: Optional[int] = None):

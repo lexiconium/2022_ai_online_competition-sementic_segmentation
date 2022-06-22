@@ -88,9 +88,18 @@ for file_name in tqdm(df["file_name"]):
 
         cnt += 1
 
-    max_cnt_id = sorted(cnts.keys(), key=lambda k: cnts[k])[-1]
-    pred_classes.append(id2label[max_cnt_id])
-    pred_segments.append(" ".join(map(str, labels[max_cnt_id])))
+    if cnts:
+        max_cnt_id = sorted(cnts.keys(), key=lambda k: cnts[k])[-1]
+        pred_class = id2label[max_cnt_id]
+        pred_segment = " ".join(map(str, labels[max_cnt_id]))
+    else:
+        pred_class = "container_truck"
+        pred_segment = "0 0"
+
+        print("no segment found. set to container_truck")
+
+    pred_classes.append(pred_class)
+    pred_segments.append(pred_segment)
 
 df["class"] = pred_classes
 df["prediction"] = pred_segments

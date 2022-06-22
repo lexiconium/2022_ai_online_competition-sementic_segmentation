@@ -2,11 +2,14 @@ import argparse
 import os
 from collections import defaultdict
 
+import numpy as np
+
 import torch
 from torch.nn import functional
 
 from transformers import AutoFeatureExtractor
 
+import albumentations
 from PIL import Image
 
 import pandas as pd
@@ -14,6 +17,28 @@ import pandas as pd
 from tqdm import tqdm
 
 from utils import load_config
+
+
+def get_logits(feature_extractor, model, img, augmentation=None):
+    np_img = np.array(img)
+    if augmentation is not None:
+        np_img = augmentation(np_img)
+
+    inputs = feature_extractor(images=np_img, return_tensors="pt")
+    pixel_values = inputs["pixel_values"].to(device)
+    with torch.no_grad():
+        outputs = model(pixel_values=pixel_values)
+        logits = outputs.logits
+
+        upsampled_logits = functional.interpolate(
+            logits,
+            size=img.size[::-1],
+            mode="bilinear",
+            align_corners=False
+        )
+
+    return upsampled_logits[0]
+
 
 parser = argparse.ArgumentParser(description="Image segmentation")
 parser.add_argument("--model_path", type=str, required=True)
@@ -44,21 +69,15 @@ pred_classes = []
 pred_segments = []
 for file_name in tqdm(df["file_name"]):
     img = Image.open(os.path.join(config["test_image_directory"], file_name))
-    encoded_inputs = feature_extractor(img, return_tensors="pt")
-    pixel_values = encoded_inputs["pixel_values"].to(device)
 
-    with torch.no_grad():
-        outputs = model(pixel_values=pixel_values)
-        logits = outputs.logits
+    logits = get_logits(feature_extractor, model, img)
+    downscaled_logits = get_logits(feature_extractor, model, img, lambda img: albumentations.scale(img, 0.5))
+    upscaled_logits = get_logits(feature_extractor, model, img, lambda img: albumentations.scale(img, 2))
 
-        upsampled_logits = functional.interpolate(
-            logits,
-            size=img.size[::-1],
-            mode="bilinear",
-            align_corners=False
-        )
-        predicted = upsampled_logits.argmax(dim=1)[0]
+    logits = torch.maximum(logits, torch.maximum(downscaled_logits, upscaled_logits))
+    logits[0, :, :] = torch.minimum(logits[0], torch.minimum(downscaled_logits[0], upscaled_logits[0]))
 
+    predicted = logits.argmax(dim=0)
     predicted = predicted.view(-1)
 
     labels = defaultdict(list)

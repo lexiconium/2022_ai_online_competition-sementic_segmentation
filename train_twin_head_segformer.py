@@ -122,9 +122,10 @@ for epoch in range(1, train_config["num_epochs"] + 1):
         loss.backward()
 
         if step % accumulation_steps == 0:
-            optimizer.zero_grad()
             optimizer.step()
             scheduler.step()
+
+            optimizer.zero_grad()
 
         f1_metric.add_batch(
             predictions=classifier_logits.argmax(dim=-1).detach().cpu().numpy(),

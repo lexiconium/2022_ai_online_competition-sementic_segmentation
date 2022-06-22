@@ -80,7 +80,11 @@ metric = load_metric("f1")
 
 model.train()
 
-for epoch in range(1, train_config["num_epochs"] + 1):
+num_epochs = args.num_epochs
+if num_epochs is None:
+    num_epochs = train_config["num_epochs"]
+
+for epoch in range(1, num_epochs + 1):
     for pixel_values, labels in tqdm(train_dataloader, train_id):
         pixel_values = pixel_values.to(device)
         labels = labels.to(device)

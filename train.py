@@ -88,7 +88,11 @@ metric = load_metric("mean_iou")
 
 model.train()
 
-for epoch in range(1, train_config["num_epochs"] + 1):
+num_epochs = args.num_epochs
+if num_epochs is None:
+    num_epochs = train_config["num_epochs"]
+
+for epoch in range(1, num_epochs + 1):
     for batch in tqdm(dataloader, train_id):
         pixel_values = batch["pixel_values"].to(device)
         labels = batch["labels"].to(device)

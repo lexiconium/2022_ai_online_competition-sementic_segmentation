@@ -104,7 +104,7 @@ if num_epochs is None:
     num_epochs = train_config["num_epochs"]
 
 step = 0
-for epoch in range(1, train_config["num_epochs"] + 1):
+for epoch in range(1, num_epochs + 1):
     for (classifier_pixel_values, classifier_labels), segmenter_batch in tqdm(
         zip(classifier_train_dataloader, train_dataloader),
         train_id,

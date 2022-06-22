@@ -22,15 +22,19 @@ from dataset import HarborSegmentationDataset
 
 parser = argparse.ArgumentParser(description="Train segmenter")
 parser.add_argument("--seed", type=int, default=None)
+parser.add_argument("--id", type=str, default=None)
+parser.add_argument("--num_epochs", type=int, default=None)
 
 args = parser.parse_args()
 
 if args.seed is not None:
     set_seed(args.seed)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+train_id = args.id
+if train_id is None:
+    train_id = uuid.uuid4().hex
 
-train_id = uuid.uuid4().hex[:16]
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 config = load_config(os.path.join(os.path.dirname(__file__), "config.yaml"))
 train_config = config["train"]["segmenter"]
@@ -47,9 +51,13 @@ transform = albumentations.Compose([
         max_holes=16, max_height=0.1, max_width=0.1, min_height=0.05, min_width=0.05, p=0.5
     ),
     albumentations.HorizontalFlip(p=0.5),
+    albumentations.SafeRotate(15, p=0.5),
+    albumentations.GaussNoise(p=0.5),
+    albumentations.OpticalDistortion(p=0.5),
     albumentations.OneOf([
-        albumentations.GaussNoise(p=0.5),
-        albumentations.OpticalDistortion(p=0.5),
+        albumentations.RGBShift(),
+        albumentations.RandomToneCurve(),
+        albumentations.InvertImg(),
         albumentations.ToGray()
     ]),
     ToTensorV2()
@@ -119,11 +127,4 @@ for epoch in range(1, train_config["num_epochs"] + 1):
         f"└─ mAcc: {metrics['mean_accuracy']:.4f}\n"
     )
 
-    torch.save(
-        model,
-        os.path.join(
-            os.path.dirname(__file__),
-            "checkpoints",
-            f"{train_id}_{model_name.split('/')[-1]}_segmenter_epoch_{epoch}.pt"
-        )
-    )
+    torch.save(model, os.path.join(os.path.dirname(__file__), "checkpoints", f"{train_id}_{epoch}.pt"))

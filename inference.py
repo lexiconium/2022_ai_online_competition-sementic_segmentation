@@ -17,6 +17,7 @@ from utils import load_config
 
 parser = argparse.ArgumentParser(description="Image segmentation")
 parser.add_argument("--model_path", type=str, required=True)
+parser.add_argument("--output_name", type=str, default=None)
 
 args = parser.parse_args()
 
@@ -94,4 +95,12 @@ for file_name in tqdm(df["file_name"]):
 df["class"] = pred_classes
 df["prediction"] = pred_segments
 
-df.to_csv(f"{args.model_path.split('_')[0]}_submission.csv", index=False)
+checkpoint = args.model_path.split("/")[-1]
+train_id, trained_epochs = checkpoint.split(".")[0].split("_")
+
+output_name = args.output_name
+if output_name is None:
+    output_name = f"{train_id}_{trained_epochs}_submission"
+output_name = output_name.split(".")[0] + ".csv"
+
+df.to_csv(output_name, index=False)

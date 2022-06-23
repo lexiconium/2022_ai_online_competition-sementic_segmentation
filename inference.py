@@ -16,6 +16,7 @@ import pandas as pd
 
 from tqdm import tqdm
 
+from model import SegformerDualHeadSegmentation
 from utils import load_config
 
 
@@ -27,7 +28,11 @@ def get_logits(feature_extractor, model, img, augmentation=None):
     inputs = feature_extractor(images=np_img, return_tensors="pt")
     pixel_values = inputs["pixel_values"].to(device)
     with torch.no_grad():
-        outputs = model(pixel_values=pixel_values)
+        # for compatibility
+        if isinstance(model, SegformerDualHeadSegmentation):
+            outputs = model.segment(pixel_values=pixel_values)
+        else:
+            outputs = model(pixel_values=pixel_values)
         logits = outputs.logits
 
         upsampled_logits = functional.interpolate(
